@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adelaide Reading API Test</title>
+    <script>
+        async function registerUser() {
+            const userData = {
+                openid: "openid_example",
+                nickName: "TestUser",
+                avatarUrl: "https://example.com/avatar.png"
+            };
+            console.log("Registering user with data:", userData);
+            try {
+                const response = await fetch('https://adelaide-reading-api.tj15982183241.workers.dev/api/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+                const data = await response.json();
+                console.log("User registration response:", data);
+                document.getElementById('userResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error("Error registering user:", error);
+                document.getElementById('userResult').textContent = "Error registering user: " + error.message;
+            }
+        }
+
+        async function loginUser() {
+            const loginData = {
+                code: "test_code"
+            };
+            console.log("Logging in with code:", loginData.code);
+            try {
+                const response = await fetch('https://adelaide-reading-api.tj15982183241.workers.dev/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(loginData)
+                });
+                const data = await response.json();
+                console.log("Login response:", data);
+                document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error("Error logging in user:", error);
+                document.getElementById('loginResult').textContent = "Error logging in user: " + error.message;
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>Adelaide Reading API Test Page</h1>
+
+    <h2>Register User</h2>
+    <button onclick="registerUser()">Register User</button>
+    <pre id="userResult"></pre>
+
+    <h2>Login User</h2>
+    <button onclick="loginUser()">Login User</button>
+    <pre id="loginResult"></pre>
+</body>
+</html>

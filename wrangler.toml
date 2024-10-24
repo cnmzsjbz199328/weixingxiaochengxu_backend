@@ -1,0 +1,9 @@
+name = "adelaide-reading-api"
+main = "src/index.js"
+compatibility_date = "2023-05-18"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "adelaidereading"
+database_id = "d70dd215-dc5f-4bc6-b390-b3ee07328f13"
+
