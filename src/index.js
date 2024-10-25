@@ -1,61 +1,71 @@
-import { getBooks } from './handlers/getBooks.js';
-import { addBook } from './handlers/addBook.js';
-import { getUsers } from './handlers/getUsers.js';
-import { addUser } from './handlers/addUser.js';
-import { getMeetings } from './handlers/getMeetings.js'; // 引入处理会议请求的函数
-import { handleOptions } from './handlers/handleOptions.js';
-import { handleLogin } from './handlers/login.js'; // 引入处理登录请求的函数
-import { headers } from './config.js'; // 引入请求头配置
+import { handleLogin } from './handlers/login.js';
+import { handleGetUsers } from './handlers/getUsers.js';
+import { handleGetBooks } from './handlers/getBooks.js';
+import { handleGetMeetings } from './handlers/getMeetings.js';
+import { headers, optionsHeaders } from './config.js';
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
+    // 解析请求 URL
     const url = new URL(request.url);
     console.log(`Received request: ${request.method} ${url.pathname}`);
-
-    if (url.pathname === "/api/login" && request.method === "POST") {
-      return handleLogin(request, env);
-    }
-
-    // Handle root path by providing some basic information
-    if (url.pathname === "/") {
-      console.log("Handling root path");
-      return new Response("Welcome to the Adelaide Reading API! Use /api/books, /api/users, or /api/meetings to interact with the data.", {
-        headers: headers,
+    
+    // 统一处理 OPTIONS 请求
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: optionsHeaders
       });
     }
 
-    // Match /api/books or /api/books/ to allow more flexible URL paths
-    if (url.pathname.match(/^\/api\/books(\/)?$/)) {
-      if (request.method === "OPTIONS") {
-        return handleOptions(request);
-      } else if (request.method === "GET") {
-        return await getBooks(env);
-      } else if (request.method === "POST") {
-        return await addBook(request, env);
+    try {
+      // 处理根路径
+      if (url.pathname === '/' || url.pathname === '') {
+        return new Response(JSON.stringify({
+          message: 'Welcome to Adelaide Reading API',
+          endpoints: {
+            login: '/api/login',
+            users: '/api/users',
+            books: '/api/books',
+            meetings: '/api/meetings'
+          }
+        }), { headers });
       }
-    }
 
-    // Match /api/users or /api/users/ to allow more flexible URL paths
-    if (url.pathname.match(/^\/api\/users(\/)?$/)) {
-      if (request.method === "OPTIONS") {
-        return handleOptions(request);
-      } else if (request.method === "GET") {
-        return await getUsers(env);
-      } else if (request.method === "POST") {
-        return await addUser(request, env);
+      // API 路由处理
+      switch(url.pathname) {
+        case '/api/login':
+          return handleLogin(request, env);
+        case '/api/users':
+          return handleGetUsers(request, env);
+        case '/api/books':
+          return handleGetBooks(request, env);
+        case '/api/meetings':
+          return handleGetMeetings(request, env);
+        default:
+          return new Response(JSON.stringify({ 
+            error: 'Not Found',
+            message: '请求的路径不存在',
+            availableEndpoints: {
+              login: '/api/login',
+              users: '/api/users',
+              books: '/api/books',
+              meetings: '/api/meetings'
+            }
+          }), {
+            status: 404,
+            headers
+          });
       }
+    } catch (error) {
+      console.error('Error:', error);
+      return new Response(JSON.stringify({ 
+        error: 'Internal Server Error',
+        details: error.message 
+      }), {
+        status: 500,
+        headers
+      });
     }
-
-    // Match /api/meetings or /api/meetings/ to allow more flexible URL paths
-    if (url.pathname.match(/^\/api\/meetings(\/)?$/)) {
-      if (request.method === "OPTIONS") {
-        return handleOptions(request);
-      } else if (request.method === "GET") {
-        return await getMeetings(env);
-      }
-    }
-
-    console.log("Path not found, returning 404");
-    return new Response("Not Found", { status: 404, headers: { "Connection": "keep-alive" } });
   }
 };

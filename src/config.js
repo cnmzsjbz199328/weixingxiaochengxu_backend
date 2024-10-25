@@ -1,10 +1,25 @@
-export const headers = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*", // Enable CORS
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS", // 允许的请求方法
-  "Access-Control-Allow-Headers": "Content-Type", // 允许的请求头
+// CORS 预检请求的响应头
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
 };
 
-export const config = {
-  headers,
+// 常规请求的响应头
+export const headers = {
+  ...corsHeaders,
+  'Content-Type': 'application/json;charset=UTF-8',
 };
+
+// OPTIONS 请求的响应头
+export const optionsHeaders = {
+  ...corsHeaders,
+  'Content-Type': 'text/plain;charset=UTF-8',
+  'Content-Length': '0',
+};
+
+// 移除不必要的配置
+// export const config = {
+//   headers,
+// };

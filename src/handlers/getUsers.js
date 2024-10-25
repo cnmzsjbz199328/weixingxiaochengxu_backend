@@ -1,23 +1,30 @@
-import { createUsersTableIfNotExists } from './createUsersTableIfNotExists.js';
-import { headers } from '../config.js'; // 引入请求头配置
+import { headers } from '../config.js';
 
-export async function getUsers(env) {
-  await createUsersTableIfNotExists(env);
+export async function handleGetUsers(request, env) {
   try {
-    console.log("Preparing to query the database...");
-    const { results } = await env.DB.prepare(
-      "SELECT id, openid, nickName, avatarUrl, joinDate, booksRead, meetingsAttended FROM Users ORDER BY id DESC LIMIT 10"
-    ).all();
-    console.log("Query successful, results:", results);
+    console.log('Fetching all users from database');
+    
+    // 移除 lastLoginDate 字段
+    const { results } = await env.DB.prepare(`
+      SELECT id, nickName, avatarUrl, joinDate, 
+             booksRead, meetingsAttended 
+      FROM Users
+    `).all();
 
-    return new Response(JSON.stringify({ results }), {
-      headers: headers,
+    console.log('Found users:', results.length);
+
+    return new Response(JSON.stringify(results), {
+      headers
     });
+
   } catch (error) {
-    console.error("Error querying the database:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error fetching users:', error);
+    return new Response(JSON.stringify({
+      error: '获取用户列表失败',
+      details: error.message
+    }), {
       status: 500,
-      headers: headers,
+      headers
     });
   }
 }

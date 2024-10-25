@@ -1,23 +1,34 @@
 import { createBooksTableIfNotExists } from './createBooksTableIfNotExists.js';
 import { headers } from '../config.js'; // 引入请求头配置
 
-export async function getBooks(env) {
-  await createBooksTableIfNotExists(env);
+export async function handleGetBooks(request, env) {
   try {
-    console.log("Preparing to query the database...");
-    const { results } = await env.DB.prepare(
-      "SELECT id, name, author, abstract, createdBy, createdAt, commentCount, isPublic FROM Books ORDER BY id DESC LIMIT 10"
-    ).all();
-    console.log("Query successful, results:", results);
+    await createBooksTableIfNotExists(env);
+    console.log('Fetching books from database');
     
-    return new Response(JSON.stringify({ results }), {
-      headers: headers, // 使用统一的请求头
+    const { results } = await env.DB.prepare(`
+      SELECT id, name, author, abstract, 
+             createdBy, createdAt, 
+             commentCount, isPublic 
+      FROM Books 
+      ORDER BY id DESC 
+      LIMIT 10
+    `).all();
+
+    console.log('Found books:', results.length);
+
+    return new Response(JSON.stringify(results), {
+      headers
     });
+
   } catch (error) {
-    console.error("Error querying the database:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error fetching books:', error);
+    return new Response(JSON.stringify({
+      error: '获取书籍列表失败',
+      details: error.message
+    }), {
       status: 500,
-      headers: headers, // 使用统一的请求头
+      headers
     });
   }
 }

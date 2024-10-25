@@ -3,64 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adelaide Reading API Test</title>
+    <title>Adelaide Reading API Test - WeChat Login</title>
+    <style>
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .login-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .get-users-button {
+            background-color: #008CBA;
+            color: white;
+        }
+        .result-container {
+            margin: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .books-button {
+            background-color: #ff9800;
+            color: white;
+        }
+        .meetings-button {
+            background-color: #9c27b0;
+            color: white;
+        }
+    </style>
     <script>
-        async function registerUser() {
-            const userData = {
-                openid: "openid_example",
-                nickName: "TestUser",
-                avatarUrl: "https://example.com/avatar.png"
-            };
-            console.log("Registering user with data:", userData);
+        async function weChatLogin() {
+            console.log("Login button clicked");
+
+            // 模拟获取微信登录 code (使用时间戳使每次请求不同)
+            const mockCode = "mock_" + Date.now();
+            console.log("Mock login code generated:", mockCode);
+
             try {
-                const response = await fetch('https://adelaide-reading-api.tj15982183241.workers.dev/api/users', {
-                    method: 'POST',
+                console.log("Sending login request to the server...");
+                const loginResponse = await fetch("https://adelaide-reading-api.tj15982183241.workers.dev/api/login", {
+                    method: "POST",
                     headers: {
-                        'Content-Type': 'application/json'
+                        "Content-Type": "application/json"
                     },
-                    body: JSON.stringify(userData)
+                    body: JSON.stringify({ code: mockCode }),
+                    mode: 'cors',
+                    credentials: 'omit'
                 });
-                const data = await response.json();
-                console.log("User registration response:", data);
-                document.getElementById('userResult').textContent = JSON.stringify(data, null, 2);
+                console.log("Login response received from server:", loginResponse);
+
+                const loginData = await loginResponse.json();
+                if (loginResponse.ok) {
+                    console.log("Login successful. User data:", loginData);
+                    document.getElementById("loginResult").innerHTML = 
+                        "<h3>登录成功</h3><pre>" + JSON.stringify(loginData, null, 2) + "</pre>";
+                } else {
+                    console.error("Error during login:", loginData);
+                    document.getElementById("loginResult").innerHTML = 
+                        "<h3>登录失败</h3><pre>" + JSON.stringify(loginData, null, 2) + "</pre>";
+                }
             } catch (error) {
-                console.error("Error registering user:", error);
-                document.getElementById('userResult').textContent = "Error registering user: " + error.message;
+                console.error("Fetch error during login:", error);
+                document.getElementById("loginResult").innerHTML = 
+                    "<h3>请求失败</h3><pre>" + error.message + "</pre>";
             }
         }
 
-        async function loginUser() {
-            const loginData = {
-                code: "test_code"
-            };
-            console.log("Logging in with code:", loginData.code);
+        async function getAllUsers() {
             try {
-                const response = await fetch('https://adelaide-reading-api.tj15982183241.workers.dev/api/login', {
-                    method: 'POST',
+                console.log("Fetching all users from the server...");
+                const usersResponse = await fetch("https://adelaide-reading-api.tj15982183241.workers.dev/api/users", {
+                    method: "GET",
                     headers: {
-                        'Content-Type': 'application/json'
+                        "Content-Type": "application/json"
                     },
-                    body: JSON.stringify(loginData)
+                    mode: 'cors',
+                    credentials: 'omit'
                 });
-                const data = await response.json();
-                console.log("Login response:", data);
-                document.getElementById('loginResult').textContent = JSON.stringify(data, null, 2);
+                console.log("Users response received from server:", usersResponse);
+
+                const usersData = await usersResponse.json();
+                if (usersResponse.ok) {
+                    console.log("Users fetched successfully. Users data:", usersData);
+                    document.getElementById("usersResult").innerHTML = 
+                        "<h3>用户列表</h3><pre>" + JSON.stringify(usersData, null, 2) + "</pre>";
+                } else {
+                    console.error("Error fetching users:", usersData);
+                    document.getElementById("usersResult").innerHTML = 
+                        "<h3>获取用户列表失败</h3><pre>" + JSON.stringify(usersData, null, 2) + "</pre>";
+                }
             } catch (error) {
-                console.error("Error logging in user:", error);
-                document.getElementById('loginResult').textContent = "Error logging in user: " + error.message;
+                console.error("Fetch error during users fetching:", error);
+                document.getElementById("usersResult").innerHTML = 
+                    "<h3>请求失败</h3><pre>" + error.message + "</pre>";
+            }
+        }
+
+        async function getBooks() {
+            try {
+                console.log("Fetching books from the server...");
+                const response = await fetch("https://adelaide-reading-api.tj15982183241.workers.dev/api/books", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById("booksResult").innerHTML = 
+                        "<h3>热门书籍</h3><pre>" + JSON.stringify(data, null, 2) + "</pre>";
+                } else {
+                    document.getElementById("booksResult").innerHTML = 
+                        "<h3>获取书籍失败</h3><pre>" + JSON.stringify(data, null, 2) + "</pre>";
+                }
+            } catch (error) {
+                document.getElementById("booksResult").innerHTML = 
+                    "<h3>请求失败</h3><pre>" + error.message + "</pre>";
+            }
+        }
+
+        async function getMeetings() {
+            try {
+                console.log("Fetching meetings from the server...");
+                const response = await fetch("https://adelaide-reading-api.tj15982183241.workers.dev/api/meetings", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById("meetingsResult").innerHTML = 
+                        "<h3>读书会</h3><pre>" + JSON.stringify(data, null, 2) + "</pre>";
+                } else {
+                    document.getElementById("meetingsResult").innerHTML = 
+                        "<h3>获取会议失败</h3><pre>" + JSON.stringify(data, null, 2) + "</pre>";
+                }
+            } catch (error) {
+                document.getElementById("meetingsResult").innerHTML = 
+                    "<h3>请求失败</h3><pre>" + error.message + "</pre>";
             }
         }
     </script>
 </head>
 <body>
-    <h1>Adelaide Reading API Test Page</h1>
+    <h1>Adelaide Reading API Test</h1>
+    
+    <div>
+        <button class="button login-button" onclick="weChatLogin()">
+            模拟微信登录
+        </button>
+        <button class="button get-users-button" onclick="getAllUsers()">
+            获取用户列表
+        </button>
+    </div>
 
-    <h2>Register User</h2>
-    <button onclick="registerUser()">Register User</button>
-    <pre id="userResult"></pre>
+    <div class="result-container">
+        <div id="loginResult"></div>
+    </div>
 
-    <h2>Login User</h2>
-    <button onclick="loginUser()">Login User</button>
-    <pre id="loginResult"></pre>
+    <div class="result-container">
+        <div id="usersResult"></div>
+    </div>
+
+    <div>
+        <button class="button books-button" onclick="getBooks()">获取热门书籍</button>
+        <button class="button meetings-button" onclick="getMeetings()">获取读书会</button>
+    </div>
+
+    <div class="result-container">
+        <div id="booksResult"></div>
+    </div>
+
+    <div class="result-container">
+        <div id="meetingsResult"></div>
+    </div>
+
+    <script>
+        console.log("Test page loaded. Ready for interaction.");
+    </script>
 </body>
 </html>
