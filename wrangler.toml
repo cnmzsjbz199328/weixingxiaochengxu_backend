@@ -6,8 +6,3 @@ compatibility_date = "2023-05-18"
 binding = "DB"
 database_name = "adelaidereading"
 database_id = "d70dd215-dc5f-4bc6-b390-b3ee07328f13"
-
-# 环境变量直接放在顶层
-[vars]
-WECHAT_APPID = "你的微信小程序 APPID"
-WECHAT_SECRET = "你的微信小程序 SECRET"

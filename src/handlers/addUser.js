@@ -7,26 +7,35 @@ export async function addUser(request, env) {
     const userData = await request.json();
     console.log("Received user data:", userData);
 
+    const { email, nickName, password } = userData;
+
+    if (!email || !nickName || !password) {
+      return new Response(JSON.stringify({ 
+        error: '缺少注册信息' 
+      }), { status: 400, headers });
+    }
+
     // 检查用户是否已存在
     const { results } = await env.DB.prepare(
-      "SELECT * FROM Users WHERE openid = ?"
-    ).bind(userData.openid).all();
+      "SELECT * FROM Users WHERE email = ? OR nickName = ?"
+    ).bind(email, nickName).all();
 
     if (results.length > 0) {
-      // 用户已存在，返回现有用户信息
-      console.log("User already exists, returning existing user data");
-      return new Response(JSON.stringify(results[0]), {
-        headers
-      });
+      // 用户已存在，返回错误信息
+      console.log("User already exists with email or nickName");
+      return new Response(JSON.stringify({ 
+        error: '用户已存在' 
+      }), { status: 409, headers });
     }
 
     // 用户不存在，创建新用户
     console.log("Creating new user");
     const result = await env.DB.prepare(
-      `INSERT INTO Users (openid, nickName, avatarUrl, joinDate, booksRead, meetingsAttended) VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO Users (email, nickName, password, avatarUrl, joinDate, booksRead, meetingsAttended) VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).bind(
-      userData.openid,
-      userData.nickName || 'New User',
+      email,
+      nickName,
+      password,
       userData.avatarUrl || '',
       new Date().toISOString(),
       0,
@@ -36,8 +45,8 @@ export async function addUser(request, env) {
     if (result.success) {
       const newUser = {
         id: result.lastRowId,
-        openid: userData.openid,
-        nickName: userData.nickName || 'New User',
+        email: email,
+        nickName: nickName,
         avatarUrl: userData.avatarUrl || '',
         joinDate: new Date().toISOString(),
         booksRead: 0,

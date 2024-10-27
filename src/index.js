@@ -2,6 +2,8 @@ import { handleLogin } from './handlers/login.js';
 import { handleGetUsers } from './handlers/getUsers.js';
 import { handleGetBooks } from './handlers/getBooks.js';
 import { handleGetMeetings } from './handlers/getMeetings.js';
+import { addUser } from './handlers/register.js'; // 引入 addUser 函数
+import { handleUpdateUser } from './handlers/updateUser.js'; // 引入 handleUpdateUser 函数
 import { headers, optionsHeaders } from './config.js';
 
 export default {
@@ -25,6 +27,8 @@ export default {
           message: 'Welcome to Adelaide Reading API',
           endpoints: {
             login: '/api/login',
+            register: '/api/register', // 添加注册端点
+            updateUser: '/api/update-user', // 添加更新用户端点
             users: '/api/users',
             books: '/api/books',
             meetings: '/api/meetings'
@@ -36,6 +40,10 @@ export default {
       switch(url.pathname) {
         case '/api/login':
           return handleLogin(request, env);
+        case '/api/register': // 添加注册路由
+          return addUser(request, env);
+        case '/api/update-user': // 添加更新用户路由
+          return handleUpdateUser(request, env);
         case '/api/users':
           return handleGetUsers(request, env);
         case '/api/books':
@@ -48,6 +56,8 @@ export default {
             message: '请求的路径不存在',
             availableEndpoints: {
               login: '/api/login',
+              register: '/api/register', // 添加注册端点
+              updateUser: '/api/update-user', // 添加更新用户端点
               users: '/api/users',
               books: '/api/books',
               meetings: '/api/meetings'

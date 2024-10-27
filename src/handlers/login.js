@@ -16,80 +16,28 @@ export async function handleLogin(request, env) {
       dbType: typeof env.DB,
     });
 
-    const { code } = await request.json();
+    const { emailOrNickName, password } = await request.json();
     
-    if (!code) {
+    if (!emailOrNickName || !password) {
       return new Response(JSON.stringify({ 
-        error: '缺少登录码' 
+        error: '缺少登录信息' 
       }), { status: 400, headers });
-    }
-
-    let openid;
-    
-    // 测试模式：如果 code 以 'mock_' 开头，使用模拟数据
-    if (code.startsWith('mock_')) {
-      openid = code;
-      console.log('Using mock openid:', openid);
-    } else {
-      // 正式环境：请求微信 API
-      const WECHAT_APPID = env.WECHAT_APPID;
-      const WECHAT_SECRET = env.WECHAT_SECRET;
-      
-      const wxResponse = await fetch(
-        `https://api.weixin.qq.com/sns/jscode2session?appid=${WECHAT_APPID}&secret=${WECHAT_SECRET}&js_code=${code}&grant_type=authorization_code`
-      );
-      
-      const wxData = await wxResponse.json();
-      
-      if (wxData.errcode) {
-        console.error("微信API错误:", wxData.errmsg);
-        return new Response(JSON.stringify({ 
-          error: '微信登录验证失败' 
-        }), { status: 401, headers });
-      }
-      
-      openid = wxData.openid;
     }
 
     try {
       // 查找用户
-      console.log('Querying database for user with openid:', openid);
+      console.log('Querying database for user with email or nickName:', emailOrNickName);
       const { results } = await env.DB.prepare(
-        "SELECT * FROM Users WHERE openid = ?"
-      ).bind(openid).all();
+        "SELECT * FROM Users WHERE (email = ? OR nickName = ?) AND password = ?"
+      ).bind(emailOrNickName, emailOrNickName, password).all();
 
       console.log('Database query results:', results);
 
       let user;
       if (results.length === 0) {
-        // 创建新用户
-        console.log("Creating new user for openid:", openid);
-        const result = await env.DB.prepare(
-          `INSERT INTO Users (
-            openid, nickName, avatarUrl, joinDate, 
-            booksRead, meetingsAttended
-          ) VALUES (?, ?, ?, datetime('now'), 0, 0)`
-        ).bind(
-          openid,
-          '新用户',
-          ''
-        ).run();
-
-        console.log('Insert result:', result);
-
-        if (!result.success) {
-          throw new Error('Failed to create user: ' + JSON.stringify(result));
-        }
-
-        user = {
-          id: result.lastRowId,
-          openid: openid,
-          nickName: '新用户',
-          avatarUrl: '',
-          joinDate: new Date().toISOString(),
-          booksRead: 0,
-          meetingsAttended: 0
-        };
+        return new Response(JSON.stringify({ 
+          error: '用户不存在或密码错误' 
+        }), { status: 401, headers });
       } else {
         user = results[0];
       }
@@ -98,6 +46,7 @@ export async function handleLogin(request, env) {
       const safeUser = {
         id: user.id,
         nickName: user.nickName,
+        email: user.email,
         avatarUrl: user.avatarUrl,
         joinDate: user.joinDate,
         booksRead: user.booksRead,
