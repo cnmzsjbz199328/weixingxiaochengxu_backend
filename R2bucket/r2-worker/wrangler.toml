@@ -1,0 +1,25 @@
+name = "r2-worker"  # 你的 Worker 名字
+main = "src/index.js"  # 主入口文件
+compatibility_date = "2024-10-22"
+
+# 启用 Workers 日志
+[observability]
+enabled = true
+
+# R2 存储桶绑定，用于将 R2 集成到 Worker 中
+[[r2_buckets]]
+binding = "adelaidereader"  # 代码中引用这个存储桶的名字
+bucket_name = "adelaidereader"  # 存储桶的实际名称
+preview_bucket_name = "adelaidereader"  # 在开发/预览环境中使用的存储桶名称
+
+# 绑定一个 D1 数据库 (如果需要存储文件元数据等)
+[[d1_databases]]
+binding = "DB"
+database_name = "adelaidereading"
+database_id = "d70dd215-dc5f-4bc6-b390-b3ee07328f13"
+
+# 环境变量配置
+[vars]
+R2_BUCKET_NAME = "adelaidereader"  # 存储桶的名字，用于你的 R2 API 操作
+R2_ENDPOINT = "https://e5bb181bf10eddf30de93f35885a5479.r2.cloudflarestorage.com"  # R2 的 S3 API 端点
+

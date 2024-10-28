@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>删除功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+        input {
+            margin: 5px;
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>删除功能测试</h1>
+
+    <div class="section">
+        <h2>用户设置</h2>
+        <input type="text" id="userId" placeholder="请输入用户ID">
+        <button onclick="setUserId()">设置用户ID</button>
+        <div id="userDisplay"></div>
+    </div>
+
+    <div class="section">
+        <h2>删除书籍</h2>
+        <input type="text" id="bookId" placeholder="请输入书籍ID">
+        <button onclick="deleteBook()">删除书籍</button>
+        <div id="bookResult" class="result"></div>
+    </div>
+
+    <div class="section">
+        <h2>删除会议</h2>
+        <input type="text" id="meetingId" placeholder="请输入会议ID">
+        <button onclick="deleteMeeting()">删除会议</button>
+        <div id="meetingResult" class="result"></div>
+    </div>
+
+    <script>
+        let currentUserId = '';
+        const baseUrl = 'https://adelaide-reading-api.tj15982183241.workers.dev';
+
+        function setUserId() {
+            currentUserId = document.getElementById('userId').value;
+            document.getElementById('userDisplay').innerText = 
+                `当前用户ID: ${currentUserId}`;
+        }
+
+        async function deleteBook() {
+            if (!currentUserId) {
+                showError('bookResult', '请先设置用户ID');
+                return;
+            }
+
+            const bookId = document.getElementById('bookId').value;
+            if (!bookId) {
+                showError('bookResult', '请输入书籍ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${baseUrl}/api/user/books/${bookId}?userId=${currentUserId}`,
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('bookResult', `书籍删除成功: ${result.id}`);
+                } else {
+                    showError('bookResult', result.error);
+                }
+            } catch (error) {
+                showError('bookResult', error.message);
+            }
+        }
+
+        async function deleteMeeting() {
+            if (!currentUserId) {
+                showError('meetingResult', '请先设置用户ID');
+                return;
+            }
+
+            const meetingId = document.getElementById('meetingId').value;
+            if (!meetingId) {
+                showError('meetingResult', '请输入会议ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `${baseUrl}/api/user/meetings/${meetingId}?userId=${currentUserId}`,
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('meetingResult', `会议删除成功: ${result.id}`);
+                } else {
+                    showError('meetingResult', result.error);
+                }
+            } catch (error) {
+                showError('meetingResult', error.message);
+            }
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = 
+                `<div class="error">错误: ${message}</div>`;
+        }
+
+        function showSuccess(elementId, message) {
+            document.getElementById(elementId).innerHTML = 
+                `<div class="success">${message}</div>`;
+        }
+    </script>
+</body>
+</html>

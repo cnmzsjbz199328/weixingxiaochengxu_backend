@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>会议参与测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .signup-count {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2196F3;
+            margin-top: 10px;
+        }
+        .log {
+            color: #666;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 0.9em;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input {
+            margin: 5px;
+            padding: 8px;
+            width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .status-display {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>会议参与测试</h1>
+
+    <div class="section">
+        <h2>用户设置</h2>
+        <input type="text" id="userId" placeholder="请输入用户ID">
+        <button onclick="setUserId()">设置用户ID</button>
+        <div id="userDisplay" class="status-display"></div>
+    </div>
+
+    <div class="section">
+        <h2>参与/取消参与会议</h2>
+        <input type="text" id="meetingId" placeholder="请输入会议ID">
+        <button onclick="toggleMeeting()">切换参与状态</button>
+        <div id="meetingResult" class="result">
+            <div id="operationStatus"></div>
+            <div id="signupCount" class="signup-count"></div>
+        </div>
+        <div id="logArea" class="log"></div>
+    </div>
+
+    <script>
+        let currentUserId = '';
+        const baseUrl = 'https://adelaide-reading-api.tj15982183241.workers.dev';
+
+        function log(message, data = null) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toISOString();
+            let logMessage = `[${timestamp}] ${message}`;
+            if (data) {
+                logMessage += '\n' + JSON.stringify(data, null, 2);
+            }
+            logArea.innerHTML = logMessage + '\n\n' + logArea.innerHTML;
+        }
+
+        function setUserId() {
+            currentUserId = document.getElementById('userId').value;
+            const userDisplay = document.getElementById('userDisplay');
+            if (currentUserId) {
+                userDisplay.innerHTML = `当前用户ID: <strong>${currentUserId}</strong>`;
+                userDisplay.style.display = 'block';
+            } else {
+                userDisplay.style.display = 'none';
+            }
+            log('设置用户ID', { userId: currentUserId });
+        }
+
+        async function toggleMeeting() {
+            const operationStatus = document.getElementById('operationStatus');
+            const signupCountDisplay = document.getElementById('signupCount');
+            
+            if (!currentUserId) {
+                showError('请先设置用户ID');
+                log('错误：未设置用户ID');
+                return;
+            }
+
+            const meetingId = document.getElementById('meetingId').value;
+            if (!meetingId) {
+                showError('请输入会议ID');
+                log('错误：未输入会议ID');
+                return;
+            }
+
+            try {
+                const url = `${baseUrl}/api/user/meetings/${meetingId}/toggle?userId=${currentUserId}`;
+                log('发送请求', { 
+                    url,
+                    method: 'POST',
+                    userId: currentUserId,
+                    meetingId
+                });
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                log('收到响应', { 
+                    status: response.status,
+                    statusText: response.statusText
+                });
+
+                const result = await response.json();
+                log('响应数据', result);
+                
+                if (response.ok) {
+                    operationStatus.innerHTML = `<div class="success">
+                        ${result.action === 'join' ? 
+                        `✅ 成功参与会议 #${result.id}` : 
+                        `❌ 已取消参与会议 #${result.id}`}
+                    </div>`;
+                    
+                    signupCountDisplay.innerHTML = `当前报名人数: ${result.signupCount} 人`;
+                } else {
+                    showError(result.error || '操作失败');
+                    signupCountDisplay.innerHTML = '';
+                }
+            } catch (error) {
+                log('请求错误', { 
+                    message: error.message,
+                    stack: error.stack
+                });
+                showError(error.message);
+                signupCountDisplay.innerHTML = '';
+            }
+        }
+
+        function showError(message) {
+            const operationStatus = document.getElementById('operationStatus');
+            operationStatus.innerHTML = `<div class="error">错误: ${message}</div>`;
+            log('显示错误', { message });
+        }
+
+        // 页面加载时清空输入框和显示区域
+        window.onload = function() {
+            document.getElementById('userId').value = '';
+            document.getElementById('meetingId').value = '';
+            document.getElementById('userDisplay').style.display = 'none';
+            document.getElementById('operationStatus').innerHTML = '';
+            document.getElementById('signupCount').innerHTML = '';
+            document.getElementById('logArea').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

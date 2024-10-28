@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>书籍评论测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .log {
+            color: blue;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+        }
+        input, textarea {
+            margin: 5px;
+            padding: 5px;
+            width: 90%;
+        }
+        textarea {
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>书籍评论测试</h1>
+
+    <div class="section">
+        <h2>用户设置</h2>
+        <input type="text" id="userId" placeholder="请输入用户ID">
+        <button onclick="setUserId()">设置用户ID</button>
+        <div id="userDisplay"></div>
+    </div>
+
+    <div class="section">
+        <h2>添加评论</h2>
+        <input type="text" id="bookId" placeholder="请输入书籍ID">
+        <textarea id="content" placeholder="请输入评论内容"></textarea>
+        <button onclick="addComment()">提交评论</button>
+        <div id="commentResult" class="result"></div>
+        <div id="logArea" class="log"></div>
+    </div>
+
+    <script>
+        let currentUserId = '';
+        const baseUrl = 'https://adelaide-reading-api.tj15982183241.workers.dev';
+
+        function log(message, data = null) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toISOString();
+            let logMessage = `[${timestamp}] ${message}`;
+            if (data) {
+                logMessage += '\n' + JSON.stringify(data, null, 2);
+            }
+            logArea.innerHTML = logMessage + '\n\n' + logArea.innerHTML;
+        }
+
+        function setUserId() {
+            currentUserId = document.getElementById('userId').value;
+            document.getElementById('userDisplay').innerText = 
+                `当前用户ID: ${currentUserId}`;
+            log('设置用户ID', { userId: currentUserId });
+        }
+
+        async function addComment() {
+            if (!currentUserId) {
+                showError('commentResult', '请先设置用户ID');
+                log('错误：未设置用户ID');
+                return;
+            }
+
+            const bookId = document.getElementById('bookId').value;
+            const content = document.getElementById('content').value;
+
+            if (!bookId) {
+                showError('commentResult', '请输入书籍ID');
+                log('错误：未输入书籍ID');
+                return;
+            }
+
+            if (!content) {
+                showError('commentResult', '请输入评论内容');
+                log('错误：未输入评论内容');
+                return;
+            }
+
+            try {
+                const url = `${baseUrl}/api/books/comment`;
+                const data = {
+                    userId: currentUserId,
+                    bookId: bookId,
+                    content: content
+                };
+
+                log('发送请求', { 
+                    url,
+                    method: 'POST',
+                    data
+                });
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                log('收到响应', { 
+                    status: response.status,
+                    statusText: response.statusText
+                });
+
+                const result = await response.json();
+                log('响应数据', result);
+                
+                if (response.ok) {
+                    showSuccess('commentResult', '评论添加成功');
+                    document.getElementById('content').value = ''; // 清空评论内容
+                } else {
+                    showError('commentResult', result.error || '操作失败');
+                }
+            } catch (error) {
+                log('请求错误', { 
+                    message: error.message,
+                    stack: error.stack
+                });
+                showError('commentResult', error.message);
+            }
+        }
+
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = 
+                `<div class="error">错误: ${message}</div>`;
+            log('显示错误', { message });
+        }
+
+        function showSuccess(elementId, message) {
+            document.getElementById(elementId).innerHTML = 
+                `<div class="success">${message}</div>`;
+            log('显示成功', { message });
+        }
+    </script>
+</body>
+</html>

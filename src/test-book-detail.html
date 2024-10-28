@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>书籍详情测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .book-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .book-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        .book-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .book-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .comment-count {
+            background-color: #2196F3;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+        .book-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .info-item {
+            color: #666;
+        }
+        .info-label {
+            font-weight: bold;
+            margin-right: 5px;
+            color: #333;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .user-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 200px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .user-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        .status-reading {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .status-finished {
+            background-color: #2196F3;
+            color: white;
+        }
+        .status-none {
+            background-color: #9e9e9e;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>书籍详情测试</h1>
+
+    <div class="user-section">
+        <input type="text" id="userId" placeholder="输入用户ID（可选）">
+        <button onclick="setUserId()">设置用户</button>
+        <button onclick="clearUserId()" style="background-color: #f44336;">清除用户</button>
+        <div id="currentUser"></div>
+    </div>
+
+    <div class="book-section">
+        <input type="text" id="bookId" placeholder="输入书籍ID">
+        <button onclick="fetchBookDetail()">获取书籍详情</button>
+    </div>
+
+    <div id="bookContainer"></div>
+
+    <script>
+        const baseUrl = 'https://adelaide-reading-api.tj15982183241.workers.dev';
+        let currentUserId = null;
+
+        function setUserId() {
+            const newUserId = document.getElementById('userId').value;
+            if (newUserId) {
+                currentUserId = newUserId;
+                document.getElementById('currentUser').textContent = `当前用户ID: ${currentUserId}`;
+            }
+        }
+
+        function clearUserId() {
+            currentUserId = null;
+            document.getElementById('userId').value = '';
+            document.getElementById('currentUser').textContent = '未设置用户';
+        }
+
+        function getUserStatusDisplay(status) {
+            if (!status) {
+                return '<span class="user-status status-none">未读</span>';
+            }
+            if (status === '在读') {
+                return '<span class="user-status status-reading">在读</span>';
+            }
+            if (status === '已读') {
+                return '<span class="user-status status-finished">已读</span>';
+            }
+            return '';
+        }
+
+        async function fetchBookDetail() {
+            const bookId = document.getElementById('bookId').value;
+            if (!bookId) {
+                showError('请输入书籍ID');
+                return;
+            }
+
+            const container = document.getElementById('bookContainer');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+
+            try {
+                const url = new URL(`${baseUrl}/api/books/${bookId}`);
+                if (currentUserId) {
+                    url.searchParams.set('userId', currentUserId);
+                }
+
+                const response = await fetch(url);
+                const book = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(book.error || '获取书籍详情失败');
+                }
+
+                displayBookDetail(book);
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        function displayBookDetail(book) {
+            const container = document.getElementById('bookContainer');
+            
+            container.innerHTML = `
+                <div class="book-card">
+                    <div class="book-header">
+                        <div>
+                            <div class="book-title">
+                                ${book.name}
+                                ${currentUserId ? getUserStatusDisplay(book.userStatus) : ''}
+                            </div>
+                            <div class="book-meta">
+                                作者: ${book.author}
+                            </div>
+                        </div>
+                        <div class="comment-count">
+                            评论: ${book.commentCount || 0}
+                        </div>
+                    </div>
+                    <div class="book-description">
+                        <span class="info-label">简介:</span>
+                        <p>${book.abstract || '暂无简介'}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showError(message) {
+            const container = document.getElementById('bookContainer');
+            container.innerHTML = `
+                <div class="error">
+                    错误: ${message}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

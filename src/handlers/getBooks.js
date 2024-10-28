@@ -11,7 +11,7 @@ export async function handleGetBooks(request, env) {
              createdBy, createdAt, 
              commentCount, isPublic 
       FROM Books 
-      ORDER BY id DESC 
+      ORDER BY commentCount DESC 
       LIMIT 10
     `).all();
 

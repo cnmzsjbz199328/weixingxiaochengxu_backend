@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>会议列表测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .meeting-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .meeting-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .meeting-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .signup-count {
+            background-color: #2196F3;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+        }
+        .meeting-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .info-item {
+            color: #666;
+        }
+        .info-label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            background-color: #ffebee;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .refresh-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .refresh-button:hover {
+            background-color: #45a049;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .user-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        .user-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        .status-registered {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .status-cancelled {
+            background-color: #f44336;
+            color: white;
+        }
+        .status-none {
+            background-color: #9e9e9e;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>会议列表</h1>
+    
+    <div class="user-section">
+        <input type="text" id="userId" placeholder="输入用户ID（可选）">
+        <button onclick="setUserId()" class="refresh-button">设置用户</button>
+        <button onclick="clearUserId()" class="refresh-button" style="background-color: #f44336;">清除用户</button>
+        <div id="currentUser"></div>
+    </div>
+
+    <button onclick="fetchMeetings()" class="refresh-button">刷新会议列表</button>
+    <div id="meetingsContainer"></div>
+
+    <script>
+        const baseUrl = 'https://adelaide-reading-api.tj15982183241.workers.dev';
+        let currentUserId = null;
+
+        function setUserId() {
+            const newUserId = document.getElementById('userId').value;
+            if (newUserId) {
+                currentUserId = newUserId;
+                document.getElementById('currentUser').textContent = `当前用户ID: ${currentUserId}`;
+                fetchMeetings();
+            }
+        }
+
+        function clearUserId() {
+            currentUserId = null;
+            document.getElementById('userId').value = '';
+            document.getElementById('currentUser').textContent = '未设置用户';
+            fetchMeetings();
+        }
+
+        async function fetchMeetings() {
+            const container = document.getElementById('meetingsContainer');
+            container.innerHTML = '<div class="loading">加载中...</div>';
+
+            try {
+                const url = new URL(`${baseUrl}/api/meetings`);
+                if (currentUserId) {
+                    url.searchParams.set('userId', currentUserId);
+                }
+
+                const response = await fetch(url);
+                const meetings = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(meetings.error || '获取会议列表失败');
+                }
+
+                displayMeetings(meetings);
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error">
+                        错误: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function getUserStatusDisplay(status) {
+            if (!status) {
+                return '<span class="user-status status-none">未参与</span>';
+            }
+            if (status === '已报名') {
+                return '<span class="user-status status-registered">已报名</span>';
+            }
+            if (status === '已取消') {
+                return '<span class="user-status status-cancelled">已取消</span>';
+            }
+            return '';
+        }
+
+        function displayMeetings(meetings) {
+            const container = document.getElementById('meetingsContainer');
+            
+            if (!meetings || meetings.length === 0) {
+                container.innerHTML = '<div class="meeting-card">暂无会议</div>';
+                return;
+            }
+
+            container.innerHTML = meetings.map(meeting => `
+                <div class="meeting-card">
+                    <div class="meeting-header">
+                        <div class="meeting-title">
+                            ${meeting.name}
+                            ${currentUserId ? getUserStatusDisplay(meeting.userStatus) : ''}
+                        </div>
+                        <div class="signup-count">
+                            已报名: ${meeting.signupCount || 0} 人
+                        </div>
+                    </div>
+                    <div class="meeting-info">
+                        <div class="info-item">
+                            <span class="info-label">日期:</span>
+                            ${meeting.date}
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">时间:</span>
+                            ${meeting.time}
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">地点:</span>
+                            ${meeting.location}
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">创建者:</span>
+                            ${meeting.createdBy}
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">创建时间:</span>
+                            ${new Date(meeting.createdAt).toLocaleString()}
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">状态:</span>
+                            ${meeting.isPublic ? '公开' : '私密'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 页面加载时自动获取会议列表
+        window.onload = function() {
+            document.getElementById('currentUser').textContent = '未设置用户';
+            fetchMeetings();
+        };
+    </script>
+</body>
+</html>

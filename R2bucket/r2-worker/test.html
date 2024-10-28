@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R2 API Testing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 800px;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+        #fileList {
+            list-style: none;
+            padding: 0;
+        }
+        #fileList li {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 3px;
+        }
+        .file-url {
+            word-break: break-all;
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>R2 API Testing</h1>
+    
+    <div class="section">
+        <h2>Upload File</h2>
+        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,application/pdf" />
+        <button onclick="uploadFile()">Upload</button>
+        <div id="uploadResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>List Files</h2>
+        <button onclick="listFiles()">List Files</button>
+        <ul id="fileList"></ul>
+    </div>
+
+    <div class="section">
+        <h2>Delete File</h2>
+        <input type="text" id="fileKey" placeholder="Enter file key to delete" />
+        <button onclick="deleteFile()">Delete</button>
+        <div id="deleteResult"></div>
+    </div>
+
+    <script>
+        const baseUrl = 'https://r2-worker.tj15982183241.workers.dev';
+
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('uploadResult');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                resultDiv.innerHTML = '<div class="error">Please select a file first</div>';
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                console.log('Uploading file:', file.name, 'Type:', file.type);
+
+                const response = await fetch(`${baseUrl}/api/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                console.log('Upload response:', result);
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            File uploaded successfully!<br>
+                            Key: ${result.key}<br>
+                            URL: <a href="${result.url}" target="_blank" class="file-url">${result.url}</a><br>
+                            Type: ${result.type}<br>
+                            Size: ${(result.size / 1024).toFixed(2)} KB
+                        </div>`;
+                    await listFiles(); // 刷新文件列表
+                } else {
+                    throw new Error(result.error || result.details || 'Upload failed');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                console.error('Upload error:', error);
+            }
+        }
+
+        async function listFiles() {
+            const fileList = document.getElementById('fileList');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/files`);
+                const files = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(files.error || 'Failed to list files');
+                }
+
+                fileList.innerHTML = files.map(file => `
+                    <li>
+                        <div>Key: ${file.key}</div>
+                        <div>URL: <a href="${file.url}" target="_blank" class="file-url">${file.url}</a></div>
+                        <button onclick="deleteFile('${file.key}')">Delete</button>
+                    </li>
+                `).join('');
+            } catch (error) {
+                fileList.innerHTML = `<li class="error">Error listing files: ${error.message}</li>`;
+                console.error('List error:', error);
+            }
+        }
+
+        async function deleteFile(key) {
+            const keyToDelete = key || document.getElementById('fileKey').value;
+            const resultDiv = document.getElementById('deleteResult');
+
+            if (!keyToDelete) {
+                resultDiv.innerHTML = '<div class="error">Please enter a file key</div>';
+                return;
+            }
+
+            try {
+                // 对文件路径进行编码
+                const encodedKey = encodeURIComponent(keyToDelete);
+                const response = await fetch(`${baseUrl}/api/files/${encodedKey}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                console.log('Delete response:', result);
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            File deleted successfully<br>
+                            Key: ${result.key}
+                        </div>`;
+                    await listFiles(); // 刷新文件列表
+                } else {
+                    throw new Error(result.error || result.details || 'Delete failed');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                console.error('Delete error:', error);
+            }
+        }
+
+        // 初始加载文件列表
+        listFiles();
+    </script>
+</body>
+</html>
